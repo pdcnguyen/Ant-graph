@@ -50,11 +50,16 @@ int main()
     //    printf("%d\n", a.used);  // print number of elements
     //    freeArray(&a);
 
+    //READING STDIN
     //char file_name[50];
     char *file_name = "testCase/example_basic.stdin";
     char *line;
     size_t len = 0;
     FILE *fp;
+
+    //printf("Enter file path: \n");
+    //fgets(file_name, 50, stdin);
+    //file_name[strcspn(file_name, "\n")] = 0;
 
     fp = fopen(file_name, "r"); // read mode
 
@@ -66,8 +71,10 @@ int main()
 
     while (getline(&line, &len, fp) != -1)
     {
-        int startPoint = 0;
+        int startIndex = 0;
         char curCheckpoint = '.';
+        int beginNodeLine = 0;
+        int stepLine = 0;
 
         for (int i = 0; i < strlen(line); i++)
         {
@@ -77,24 +84,139 @@ int main()
             //printf("%d\n", (&line + i));
             //char entry = **(line + i);
 
-            if(line[i] == ':'){
-                if(curCheckpoint == '.'){
-                    printf("%d\n", i);
-                    char* substr = malloc(i-startPoint);
-                    strncpy(substr, line+startPoint, i-startPoint);
+            if (line[i] == ':')
+            {
+                if (curCheckpoint == '.')
+                {
+                    //printf("%d\n", i);
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+
+                    if (*substr == 'A')
+                    {
+                        beginNodeLine = 1;
+                    }
+
+                    if (*substr == 'I')
+                    {
+                        stepLine = 1;
+                    }
+
                     printf("%s\n", substr);
                     free(substr);
-                    printf("%s ahihi\n", substr);
+                    curCheckpoint = ':';
+                    startIndex = i + 1;
+                }
+                else
+                {
+                    EXIT_FAILURE;
+                }
+            }
 
-                }else{
+            if (line[i] == ',')
+            {
+                if (curCheckpoint == ':')
+                {
+
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+                    printf("%s\n", substr);
+                    free(substr);
+                    curCheckpoint = ',';
+                    startIndex = i + 1;
+                }
+                else if (curCheckpoint == ',')
+                {
+
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+                    printf("%s\n", substr);
+                    free(substr);
+                    curCheckpoint = ',';
+                    startIndex = i + 1;
+                }
+                else
+                {
+                    EXIT_FAILURE;
+                }
+            }
+
+            if (line[i] == '-')
+            {
+                if (curCheckpoint == ':')
+                {
+                    curCheckpoint = '-';
+                    startIndex = i + 1;
+                }
+                else if (curCheckpoint == ',')
+                {
+
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+                    printf("%s\n", substr);
+                    free(substr);
+                    curCheckpoint = '-';
+                    startIndex = i + 1;
+                }
+                else
+                {
+                    EXIT_FAILURE;
+                }
+            }
+
+            if (line[i] == '\n')
+            {
+                if (curCheckpoint == ':')
+                {
+                    if (beginNodeLine == 1)
+                    {
+                        printf("OK1\n");
+                    }
+                    if (stepLine == 1)
+                    {
+                        printf("OK2\n");
+                    }
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+                    printf("%s\n", substr);
+                    free(substr);
+                    curCheckpoint = '.';
+                    startIndex = 0;
+                }
+                else if (curCheckpoint == ',')
+                {
+
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+                    printf("%s\n", substr);
+                    free(substr);
+                    curCheckpoint = '.';
+                    startIndex = 0;
+                }
+                else if (curCheckpoint == '-')
+                {
+
+                    char *substr = malloc(i - startIndex+1);
+                    strncpy(substr, line + startIndex, i - startIndex);
+                    printf("%s\n", substr);
+                    free(substr);
+                    curCheckpoint = '.';
+                    startIndex = 0;
+                }
+                else
+                {
                     EXIT_FAILURE;
                 }
             }
         }
+        printf("==========================\n");
     }
 
     printf("\n\nMax line size: %zd\n", len);
-
+    free(line);
     fclose(fp);
+
+    //==============================================
+
     return 0;
 }
