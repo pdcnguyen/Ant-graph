@@ -35,6 +35,82 @@ void freeArray(Array *a)
 }
 
 //============================================================================================
+typedef struct
+{
+    char *ID;
+    Array *neighbourNodes;
+    size_t used;
+    size_t size;
+} node;
+
+void initNode(node *a, char *ID)
+{
+    //printf("%ld\n", strlen(*ID));
+    a->ID = ID;
+
+    a->used = 0;
+    a->size = 5;
+    a->neighbourNodes = malloc(5 * sizeof(Array));
+}
+
+void addNeighbour(node *a, int index)
+{
+    if (a->used == a->size)
+    {
+        a->size *= 2;
+        a->neighbourNodes = realloc(a->neighbourNodes, a->size * sizeof(int));
+    }
+    //a->neighbourNodes[a->used++] = index;
+    insertArray(a->neighbourNodes, index);
+}
+
+//============================================================================================
+
+typedef struct
+{
+    node *array;
+    size_t used;
+    size_t size;
+} nodeArray;
+
+void initNodeArray(nodeArray *a, size_t initialSize)
+{
+    a->array = malloc(initialSize * sizeof(node));
+    a->used = 0;
+    a->size = initialSize;
+}
+
+int insertNodeArray(nodeArray *a, node element)
+{
+    //printf("%ld\n", a->used);
+    //printf("%s\n", element.ID);
+
+    for(int i=0; i<a->used; i++){
+        printf("%s\n", a->array[i].ID);
+
+    }
+
+        printf("---------------------------\n");
+
+
+    if (a->used == a->size)
+    {
+        a->size *= 2;
+        a->array = realloc(a->array, a->size * sizeof(node));
+    }
+    a->array[a->used] = element;
+    a->used++;
+
+    return a->used - 1;
+}
+
+void freeNodeArray(nodeArray *a)
+{
+    free(a->array);
+    a->array = NULL;
+    a->used = a->size = 0;
+}
+//============================================================================================
 
 int main()
 {
@@ -49,6 +125,10 @@ int main()
     //    printf("%d\n", a.array[9]);  // print 10th element
     //    printf("%d\n", a.used);  // print number of elements
     //    freeArray(&a);
+
+    nodeArray nodes;
+
+    initNodeArray(&nodes, 10);
 
     //READING STDIN
     //char file_name[50];
@@ -89,7 +169,7 @@ int main()
                 if (curCheckpoint == '.')
                 {
                     //printf("%d\n", i);
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
 
                     if (*substr == 'A')
@@ -102,8 +182,13 @@ int main()
                         stepLine = 1;
                     }
 
-                    printf("%s\n", substr);
-                    free(substr);
+                    node a;
+                    initNode(&a, substr);
+
+                    int index = insertNodeArray(&nodes, a);
+                    // printf("%d\n", index);
+                    // printf("%s\n", substr);
+                    //free(substr);
                     curCheckpoint = ':';
                     startIndex = i + 1;
                 }
@@ -118,7 +203,7 @@ int main()
                 if (curCheckpoint == ':')
                 {
 
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
                     printf("%s\n", substr);
                     free(substr);
@@ -128,7 +213,7 @@ int main()
                 else if (curCheckpoint == ',')
                 {
 
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
                     printf("%s\n", substr);
                     free(substr);
@@ -151,7 +236,7 @@ int main()
                 else if (curCheckpoint == ',')
                 {
 
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
                     printf("%s\n", substr);
                     free(substr);
@@ -176,7 +261,7 @@ int main()
                     {
                         printf("OK2\n");
                     }
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
                     printf("%s\n", substr);
                     free(substr);
@@ -186,7 +271,7 @@ int main()
                 else if (curCheckpoint == ',')
                 {
 
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
                     printf("%s\n", substr);
                     free(substr);
@@ -196,7 +281,7 @@ int main()
                 else if (curCheckpoint == '-')
                 {
 
-                    char *substr = malloc(i - startIndex+1);
+                    char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
                     printf("%s\n", substr);
                     free(substr);
@@ -211,6 +296,11 @@ int main()
         }
         printf("==========================\n");
     }
+
+    // for (int i = 0; i < nodes.used; i++)
+    // {
+    //     printf("%s\n", nodes.array[i].ID);
+    // }
 
     printf("\n\nMax line size: %zd\n", len);
     free(line);
