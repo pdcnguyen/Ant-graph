@@ -10,11 +10,11 @@ typedef struct
     size_t size;
 } Array;
 
-void initArray(Array *a, size_t initialSize)
+void initArray(Array *a)
 {
-    a->array = malloc(initialSize * sizeof(int));
+    a->array = malloc(5 * sizeof(int));
     a->used = 0;
-    a->size = initialSize;
+    a->size = 5;
 }
 
 void insertArray(Array *a, int element)
@@ -24,6 +24,7 @@ void insertArray(Array *a, int element)
         a->size *= 2;
         a->array = realloc(a->array, a->size * sizeof(int));
     }
+
     a->array[a->used++] = element;
 }
 
@@ -39,29 +40,38 @@ typedef struct
 {
     char *ID;
     Array *neighbourNodes;
-    size_t used;
-    size_t size;
+    size_t timesVisited;
 } node;
 
 void initNode(node *a, char *ID)
 {
-    //printf("%ld\n", strlen(*ID));
     a->ID = ID;
+    a->timesVisited = 0;
+    a->neighbourNodes = malloc(sizeof(Array));
 
-    a->used = 0;
-    a->size = 5;
-    a->neighbourNodes = malloc(5 * sizeof(Array));
+    initArray(a->neighbourNodes);
 }
 
-void addNeighbour(node *a, int index)
+void addNeighbour(node *a, int neighbourIndex)
 {
-    if (a->used == a->size)
+    for (int i = 0; i < a->neighbourNodes->used; i++)
     {
-        a->size *= 2;
-        a->neighbourNodes = realloc(a->neighbourNodes, a->size * sizeof(int));
+        if (a->neighbourNodes->array[i] == neighbourIndex)
+        {
+            printf("Neighbour of index %d already added in %s\n", neighbourIndex, a->ID);
+        }
     }
-    //a->neighbourNodes[a->used++] = index;
-    insertArray(a->neighbourNodes, index);
+
+    printf("Add index %d as a neighbour of %s\n", neighbourIndex, a->ID);
+
+    insertArray(a->neighbourNodes, neighbourIndex);
+}
+
+void updateTimeVisited(node *a, int timeVisited)
+{
+    a->timesVisited = timeVisited;
+
+    printf("Update time visited of Node %s to %d\n", a->ID, timeVisited);
 }
 
 //============================================================================================
@@ -80,26 +90,33 @@ void initNodeArray(nodeArray *a, size_t initialSize)
     a->size = initialSize;
 }
 
-int insertNodeArray(nodeArray *a, node element)
+int insertNodeArray(nodeArray *a, char *ID)
 {
-    //printf("%ld\n", a->used);
-    //printf("%s\n", element.ID);
+    printf("Add Node %s\n", ID);
 
-    for(int i=0; i<a->used; i++){
-        printf("%s\n", a->array[i].ID);
+    for (int i = 0; i < a->used; i++)
+    {
+        if (strcmp(ID, a->array[i].ID) == 0)
+        {
+            printf("Node already exists at index %d\n", i);
 
+            return i;
+        }
     }
 
-        printf("---------------------------\n");
-
+    printf("Adding Node %s\n", ID);
 
     if (a->used == a->size)
     {
         a->size *= 2;
         a->array = realloc(a->array, a->size * sizeof(node));
     }
-    a->array[a->used] = element;
-    a->used++;
+
+    node newNode;
+    initNode(&newNode, ID);
+
+    a->array[a->used] = newNode;
+    a->used = a->used + 1;
 
     return a->used - 1;
 }
@@ -112,83 +129,53 @@ void freeNodeArray(nodeArray *a)
 }
 //============================================================================================
 
-int main()
+void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSteps)
 {
 
-    //    Array a;
-    //    int i;
-
-    //    initArray(&a, 5);  // initially 5 elements
-    //    for (i = 0; i < 100; i++){
-    //        insertArray(&a, i);  // automatically resizes as necessary
-    //    }
-    //    printf("%d\n", a.array[9]);  // print 10th element
-    //    printf("%d\n", a.used);  // print number of elements
-    //    freeArray(&a);
-
-    nodeArray nodes;
-
-    initNodeArray(&nodes, 10);
-
-    //READING STDIN
-    //char file_name[50];
-    char *file_name = "testCase/example_basic.stdin";
     char *line;
     size_t len = 0;
-    FILE *fp;
 
-    //printf("Enter file path: \n");
-    //fgets(file_name, 50, stdin);
-    //file_name[strcspn(file_name, "\n")] = 0;
-
-    fp = fopen(file_name, "r"); // read mode
-
-    if (fp == NULL)
-    {
-        perror("Error while opening the file.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    while (getline(&line, &len, fp) != -1)
+    while (getline(&line, &len, stdin) != -1)
     {
         int startIndex = 0;
         char curCheckpoint = '.';
+
         int beginNodeLine = 0;
-        int stepLine = 0;
+        int stepNumLine = 0;
+
+        size_t currentNodeIndex = 0;
 
         for (int i = 0; i < strlen(line); i++)
         {
-            // printf("%c\n", line[i]);
-            // printf("%p\n", &line[i]);
-            // printf("%c\n", *(&line[i]));
-            //printf("%d\n", (&line + i));
-            //char entry = **(line + i);
 
             if (line[i] == ':')
             {
                 if (curCheckpoint == '.')
                 {
-                    //printf("%d\n", i);
                     char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
 
                     if (*substr == 'A')
                     {
                         beginNodeLine = 1;
+                        curCheckpoint = ':';
+                        startIndex = i + 1;
+                        printf("Starting node line\n");
+
+                        continue;
                     }
 
                     if (*substr == 'I')
                     {
-                        stepLine = 1;
+                        stepNumLine = 1;
+                        curCheckpoint = ':';
+                        startIndex = i + 1;
+                        printf("Number of steps line\n");
+
+                        continue;
                     }
 
-                    node a;
-                    initNode(&a, substr);
-
-                    int index = insertNodeArray(&nodes, a);
-                    // printf("%d\n", index);
-                    // printf("%s\n", substr);
-                    //free(substr);
+                    currentNodeIndex = insertNodeArray(nodes, substr);
                     curCheckpoint = ':';
                     startIndex = i + 1;
                 }
@@ -200,23 +187,13 @@ int main()
 
             if (line[i] == ',')
             {
-                if (curCheckpoint == ':')
+                if (curCheckpoint == ':' || curCheckpoint == ',')
                 {
-
                     char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
-                    printf("%s\n", substr);
-                    free(substr);
-                    curCheckpoint = ',';
-                    startIndex = i + 1;
-                }
-                else if (curCheckpoint == ',')
-                {
-
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
-                    printf("%s\n", substr);
-                    free(substr);
+                    int index = insertNodeArray(nodes, substr);
+                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = ',';
                     startIndex = i + 1;
                 }
@@ -235,11 +212,11 @@ int main()
                 }
                 else if (curCheckpoint == ',')
                 {
-
                     char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
-                    printf("%s\n", substr);
-                    free(substr);
+                    int index = insertNodeArray(nodes, substr);
+                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = '-';
                     startIndex = i + 1;
                 }
@@ -255,16 +232,27 @@ int main()
                 {
                     if (beginNodeLine == 1)
                     {
-                        printf("OK1\n");
+                        char *substr = malloc(i - startIndex + 1);
+                        strncpy(substr, line + startIndex, i - startIndex);
+                        *startingNodeIndex = insertNodeArray(nodes, substr);
+                        curCheckpoint = '.';
+                        startIndex = 0;
+                        continue;
                     }
-                    if (stepLine == 1)
+                    if (stepNumLine == 1)
                     {
-                        printf("OK2\n");
+                        char *substr = malloc(i - startIndex + 1);
+                        strncpy(substr, line + startIndex, i - startIndex);
+                        *numberOfSteps = atoi(substr);
+                        curCheckpoint = '.';
+                        startIndex = 0;
+                        continue;
                     }
                     char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
-                    printf("%s\n", substr);
-                    free(substr);
+                    int index = insertNodeArray(nodes, substr);
+                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = '.';
                     startIndex = 0;
                 }
@@ -273,16 +261,17 @@ int main()
 
                     char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
-                    printf("%s\n", substr);
-                    free(substr);
+                    int index = insertNodeArray(nodes, substr);
+                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = '.';
                     startIndex = 0;
                 }
                 else if (curCheckpoint == '-')
                 {
-
                     char *substr = malloc(i - startIndex + 1);
                     strncpy(substr, line + startIndex, i - startIndex);
+                    updateTimeVisited(&(nodes->array[currentNodeIndex]), atoi(substr));
                     printf("%s\n", substr);
                     free(substr);
                     curCheckpoint = '.';
@@ -297,16 +286,39 @@ int main()
         printf("==========================\n");
     }
 
-    // for (int i = 0; i < nodes.used; i++)
-    // {
-    //     printf("%s\n", nodes.array[i].ID);
-    // }
-
     printf("\n\nMax line size: %zd\n", len);
     free(line);
-    fclose(fp);
+}
 
-    //==============================================
+int main()
+{
+
+    //    Array a;
+    //    int i;
+
+    //    initArray(&a, 5);  // initially 5 elements
+    //    for (i = 0; i < 100; i++){
+    //        insertArray(&a, i);  // automatically resizes as necessary
+    //    }
+    //    printf("%d\n", a.array[9]);  // print 10th element
+    //    printf("%d\n", a.used);  // print number of elements
+    //    freeArray(&a);
+
+    nodeArray nodes;
+    initNodeArray(&nodes, 10);
+
+    size_t startingNodeIndex = 0;
+    size_t numberOfSteps = 0;
+
+    processInput(&nodes, &startingNodeIndex, &numberOfSteps);
+
+    for (int i = 0; i < nodes.used; i++)
+    {
+        printf("%s\n", nodes.array[i].ID);
+    }
+
+    printf("Start at %ld\n", startingNodeIndex);
+    printf("Number of steps %ld\n", numberOfSteps);
 
     return 0;
 }
