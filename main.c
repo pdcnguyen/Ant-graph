@@ -10,6 +10,22 @@ typedef struct
     size_t size;
 } Array;
 
+typedef struct
+{
+    char *ID;
+    Array *neighbourNodes;
+    size_t timesVisited;
+} node;
+
+typedef struct
+{
+    node *array;
+    size_t used;
+    size_t size;
+} nodeArray;
+
+//========================================================================================
+
 void initArray(Array *a)
 {
     a->array = malloc(5 * sizeof(int));
@@ -17,7 +33,7 @@ void initArray(Array *a)
     a->size = 5;
 }
 
-void insertArray(Array *a, int element)
+void insertArray(nodeArray *nodes, Array *a, int index)
 {
     if (a->used == a->size)
     {
@@ -25,7 +41,25 @@ void insertArray(Array *a, int element)
         a->array = realloc(a->array, a->size * sizeof(int));
     }
 
-    a->array[a->used++] = element;
+    for (int i = 0; i < a->used; i++)
+    {
+        if (strcmp(nodes->array[a->array[i]].ID, nodes->array[index].ID) > 0)
+        {
+            int tmp = a->array[i];
+            a->array[i] = index;
+            int tmp2 = 0;
+            for (int j = i + 1; j < a->used; j++)
+            {
+                tmp2 = a->array[j];
+                a->array[j] = tmp;
+                tmp = tmp2;
+            }
+            a->array[a->used++] = tmp;
+            return;
+        }
+    }
+
+    a->array[a->used++] = index;
 }
 
 void freeArray(Array *a)
@@ -36,12 +70,6 @@ void freeArray(Array *a)
 }
 
 //============================================================================================
-typedef struct
-{
-    char *ID;
-    Array *neighbourNodes;
-    size_t timesVisited;
-} node;
 
 void initNode(node *a, char *ID)
 {
@@ -52,7 +80,7 @@ void initNode(node *a, char *ID)
     initArray(a->neighbourNodes);
 }
 
-void addNeighbour(node *a, int neighbourIndex)
+void addNeighbour(nodeArray *nodes, node *a, int neighbourIndex)
 {
     for (int i = 0; i < a->neighbourNodes->used; i++)
     {
@@ -64,24 +92,17 @@ void addNeighbour(node *a, int neighbourIndex)
 
     printf("Add index %d as a neighbour of %s\n", neighbourIndex, a->ID);
 
-    insertArray(a->neighbourNodes, neighbourIndex);
+    insertArray(nodes, a->neighbourNodes, neighbourIndex);
 }
 
 void updateTimeVisited(node *a, int timeVisited)
 {
-    a->timesVisited = timeVisited;
+    a->timesVisited = (a->timesVisited + timeVisited) % 4294967295;
 
-    printf("Update time visited of Node %s to %d\n", a->ID, timeVisited);
+    printf("Update time visited of Node %s with +%d to %ld\n", a->ID, timeVisited, a->timesVisited);
 }
 
 //============================================================================================
-
-typedef struct
-{
-    node *array;
-    size_t used;
-    size_t size;
-} nodeArray;
 
 void initNodeArray(nodeArray *a, size_t initialSize)
 {
@@ -129,6 +150,15 @@ void freeNodeArray(nodeArray *a)
 }
 //============================================================================================
 
+char *extractString(char *line, int startIndex, int endIndex)
+{
+    char *substr = malloc(endIndex - startIndex + 1);
+    substr[endIndex - startIndex] = '\0';
+    strncpy(substr, line + startIndex, endIndex - startIndex);
+
+    return substr;
+}
+
 void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSteps)
 {
 
@@ -152,8 +182,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
             {
                 if (curCheckpoint == '.')
                 {
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
+                    char *substr = extractString(line, startIndex, i);
 
                     if (*substr == 'A')
                     {
@@ -189,11 +218,11 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
             {
                 if (curCheckpoint == ':' || curCheckpoint == ',')
                 {
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
+                    char *substr = extractString(line, startIndex, i);
+
                     int index = insertNodeArray(nodes, substr);
-                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
-                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
+                    addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = ',';
                     startIndex = i + 1;
                 }
@@ -207,16 +236,27 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
             {
                 if (curCheckpoint == ':')
                 {
-                    curCheckpoint = '-';
-                    startIndex = i + 1;
+                    if (startIndex == i)
+                    {
+                        curCheckpoint = '-';
+                        startIndex = i + 1;
+                    }
+                    else
+                    {
+                        char *substr = extractString(line, startIndex, i);
+                        int index = insertNodeArray(nodes, substr);
+                        addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
+                        addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
+                        curCheckpoint = '-';
+                        startIndex = i + 1;
+                    }
                 }
                 else if (curCheckpoint == ',')
                 {
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
+                    char *substr = extractString(line, startIndex, i);
                     int index = insertNodeArray(nodes, substr);
-                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
-                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
+                    addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = '-';
                     startIndex = i + 1;
                 }
@@ -232,8 +272,8 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                 {
                     if (beginNodeLine == 1)
                     {
-                        char *substr = malloc(i - startIndex + 1);
-                        strncpy(substr, line + startIndex, i - startIndex);
+                        char *substr = extractString(line, startIndex, i);
+
                         *startingNodeIndex = insertNodeArray(nodes, substr);
                         curCheckpoint = '.';
                         startIndex = 0;
@@ -241,39 +281,36 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                     }
                     if (stepNumLine == 1)
                     {
-                        char *substr = malloc(i - startIndex + 1);
-                        strncpy(substr, line + startIndex, i - startIndex);
+                        char *substr = extractString(line, startIndex, i);
+
                         *numberOfSteps = atoi(substr);
                         curCheckpoint = '.';
                         startIndex = 0;
                         continue;
                     }
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
+                    char *substr = extractString(line, startIndex, i);
+
                     int index = insertNodeArray(nodes, substr);
-                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
-                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
+                    addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = '.';
                     startIndex = 0;
                 }
                 else if (curCheckpoint == ',')
                 {
+                    char *substr = extractString(line, startIndex, i);
 
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
                     int index = insertNodeArray(nodes, substr);
-                    addNeighbour(&(nodes->array[currentNodeIndex]), index);
-                    addNeighbour(&(nodes->array[index]), currentNodeIndex);
+                    addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
+                    addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
                     curCheckpoint = '.';
                     startIndex = 0;
                 }
                 else if (curCheckpoint == '-')
                 {
-                    char *substr = malloc(i - startIndex + 1);
-                    strncpy(substr, line + startIndex, i - startIndex);
+                    char *substr = extractString(line, startIndex, i);
+
                     updateTimeVisited(&(nodes->array[currentNodeIndex]), atoi(substr));
-                    printf("%s\n", substr);
-                    free(substr);
                     curCheckpoint = '.';
                     startIndex = 0;
                 }
@@ -314,7 +351,14 @@ int main()
 
     for (int i = 0; i < nodes.used; i++)
     {
-        printf("%s\n", nodes.array[i].ID);
+        printf("%d ", i);
+        printf("%ld neighbours ", nodes.array[i].neighbourNodes->used);
+        printf("%s-", nodes.array[i].ID);
+        for (int j = 0; j < nodes.array[i].neighbourNodes->used; j++)
+        {
+            printf("%s,", nodes.array[nodes.array[i].neighbourNodes->array[j]].ID);
+        }
+        printf("\n-------------------------\n");
     }
 
     printf("Start at %ld\n", startingNodeIndex);
