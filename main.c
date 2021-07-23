@@ -86,11 +86,11 @@ void addNeighbour(nodeArray *nodes, node *a, int neighbourIndex)
     {
         if (a->neighbourNodes->array[i] == neighbourIndex)
         {
-            printf("Neighbour of index %d already added in %s\n", neighbourIndex, a->ID);
+            //printf("Neighbour of index %d already added in %s\n", neighbourIndex, a->ID);
         }
     }
 
-    printf("Add index %d as a neighbour of %s\n", neighbourIndex, a->ID);
+    //printf("Add index %d as a neighbour of %s\n", neighbourIndex, a->ID);
 
     insertArray(nodes, a->neighbourNodes, neighbourIndex);
 }
@@ -99,7 +99,11 @@ void updateTimeVisited(node *a, int timeVisited)
 {
     a->timesVisited = (a->timesVisited + timeVisited) % 4294967295;
 
-    printf("Update time visited of Node %s with +%d to %ld\n", a->ID, timeVisited, a->timesVisited);
+    //printf("Update time visited of Node %s with +%d to %ld\n", a->ID, timeVisited, a->timesVisited);
+}
+
+void freeNode(node *a)
+{
 }
 
 //============================================================================================
@@ -113,19 +117,19 @@ void initNodeArray(nodeArray *a, size_t initialSize)
 
 int insertNodeArray(nodeArray *a, char *ID)
 {
-    printf("Add Node %s\n", ID);
+    //printf("Add Node %s\n", ID);
 
     for (int i = 0; i < a->used; i++)
     {
         if (strcmp(ID, a->array[i].ID) == 0)
         {
-            printf("Node already exists at index %d\n", i);
+            //printf("Node already exists at index %d\n", i);
 
             return i;
         }
     }
 
-    printf("Adding Node %s\n", ID);
+    //printf("Adding Node %s\n", ID);
 
     if (a->used == a->size)
     {
@@ -189,7 +193,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                         beginNodeLine = 1;
                         curCheckpoint = ':';
                         startIndex = i + 1;
-                        printf("Starting node line\n");
+                        //printf("Starting node line\n");
 
                         continue;
                     }
@@ -199,7 +203,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                         stepNumLine = 1;
                         curCheckpoint = ':';
                         startIndex = i + 1;
-                        printf("Number of steps line\n");
+                        //printf("Number of steps line\n");
 
                         continue;
                     }
@@ -320,10 +324,10 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                 }
             }
         }
-        printf("==========================\n");
+        //printf("==========================\n");
     }
 
-    printf("\n\nMax line size: %zd\n", len);
+    //printf("\n\nMax line size: %zd\n", len);
     free(line);
 }
 
@@ -349,20 +353,47 @@ int main()
 
     processInput(&nodes, &startingNodeIndex, &numberOfSteps);
 
-    for (int i = 0; i < nodes.used; i++)
+    // for (int i = 0; i < nodes.used; i++)
+    // {
+    //     printf("%s-", nodes.array[i].ID);
+    //     for (int j = 0; j < nodes.array[i].neighbourNodes->used; j++)
+    //     {
+    //         printf("%s,", nodes.array[nodes.array[i].neighbourNodes->array[j]].ID);
+    //     }
+    //     printf("\n");
+    // }
+
+    // printf("\n-------------------------\n");
+    // printf("Start at %ld\n", startingNodeIndex);
+    // printf("Number of steps %ld\n", numberOfSteps);
+
+    for (int i = 1; i <= numberOfSteps; i++)
     {
-        printf("%d ", i);
-        printf("%ld neighbours ", nodes.array[i].neighbourNodes->used);
-        printf("%s-", nodes.array[i].ID);
-        for (int j = 0; j < nodes.array[i].neighbourNodes->used; j++)
-        {
-            printf("%s,", nodes.array[nodes.array[i].neighbourNodes->array[j]].ID);
-        }
-        printf("\n-------------------------\n");
+
+        node *last = &(nodes.array[startingNodeIndex]);
+        int timesVisited = last->timesVisited;
+        int numOfNeighbour = last->neighbourNodes->used;
+
+        //printf("%s->%d modulo %d\n", last->ID, timesVisited, numOfNeighbour);
+
+        startingNodeIndex = last->neighbourNodes->array[timesVisited % numOfNeighbour];
+        updateTimeVisited(last, 1);
+
+        node *current = &(nodes.array[startingNodeIndex]);
+
+        //printf("%s:%ld\n", current->ID, current->timesVisited);
     }
 
-    printf("Start at %ld\n", startingNodeIndex);
-    printf("Number of steps %ld\n", numberOfSteps);
+    //printf("\n-------------------------\n");
+
+    for (int i = 0; i < nodes.used; i++)
+    {
+        printf("%s:%ld\n", nodes.array[i].ID, nodes.array[i].timesVisited);
+
+    }
+
+    printf("E:%s\n", nodes.array[startingNodeIndex].ID);
+
 
     return 0;
 }
