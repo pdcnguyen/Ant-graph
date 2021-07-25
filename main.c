@@ -104,6 +104,10 @@ void updateTimeVisited(node *a, int timeVisited)
 
 void freeNode(node *a)
 {
+    free(a->ID);
+    a->timesVisited = 0;
+    freeArray(a->neighbourNodes);
+    free(a->neighbourNodes);
 }
 
 //============================================================================================
@@ -124,7 +128,7 @@ int insertNodeArray(nodeArray *a, char *ID)
         if (strcmp(ID, a->array[i].ID) == 0)
         {
             //printf("Node already exists at index %d\n", i);
-
+            free(ID);
             return i;
         }
     }
@@ -148,6 +152,13 @@ int insertNodeArray(nodeArray *a, char *ID)
 
 void freeNodeArray(nodeArray *a)
 {
+
+    for (int i = 0; i < a->used; i++)
+    {
+        freeNode(&(a->array[i]));
+    }
+
+
     free(a->array);
     a->array = NULL;
     a->used = a->size = 0;
@@ -166,7 +177,7 @@ char *extractString(char *line, int startIndex, int endIndex)
 void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSteps)
 {
 
-    char *line;
+    char *line = NULL;
     size_t len = 0;
 
     while (getline(&line, &len, stdin) != -1)
@@ -195,6 +206,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                         startIndex = i + 1;
                         //printf("Starting node line\n");
 
+                        free(substr);
                         continue;
                     }
 
@@ -205,6 +217,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                         startIndex = i + 1;
                         //printf("Number of steps line\n");
 
+                        free(substr);
                         continue;
                     }
 
@@ -290,6 +303,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                         *numberOfSteps = atoi(substr);
                         curCheckpoint = '.';
                         startIndex = 0;
+                        free(substr);
                         continue;
                     }
                     char *substr = extractString(line, startIndex, i);
@@ -317,6 +331,7 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                     updateTimeVisited(&(nodes->array[currentNodeIndex]), atoi(substr));
                     curCheckpoint = '.';
                     startIndex = 0;
+                    free(substr);
                 }
                 else
                 {
@@ -389,11 +404,11 @@ int main()
     for (int i = 0; i < nodes.used; i++)
     {
         printf("%s:%ld\n", nodes.array[i].ID, nodes.array[i].timesVisited);
-
     }
 
     printf("E:%s\n", nodes.array[startingNodeIndex].ID);
 
+    freeNodeArray(&nodes);
 
     return 0;
 }
