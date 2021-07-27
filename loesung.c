@@ -210,8 +210,10 @@ int processNeighbours(nodeArray *nodes, char *neighbour, int mainNodeIndex, Arra
         return -1;
     }
 
-    for(int i =0; i<connectedNodes->used; i++){
-        if(connectedNodes->array[i]==index){
+    for (int i = 0; i < connectedNodes->used; i++)
+    {
+        if (connectedNodes->array[i] == index)
+        {
             freeArray(connectedNodes);
             return -1;
         }
@@ -279,6 +281,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         if (currentNodeIndex == -1)
                         {
                             free(line);
+                            freeArray(&connectedNodes);
                             return -1;
                         }
                         if (nodes->array[currentNodeIndex].listed == 0)
@@ -288,6 +291,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         else
                         {
                             free(line);
+                            freeArray(&connectedNodes);
                             return -1;
                         }
                         curCheckpoint = ':';
@@ -307,6 +311,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         if (status == -1)
                         {
                             free(line);
+                            freeArray(&connectedNodes);
                             return -1;
                         }
 
@@ -334,6 +339,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             if (status == -1)
                             {
                                 free(line);
+                                freeArray(&connectedNodes);
                                 return -1;
                             }
                             curCheckpoint = '-';
@@ -346,6 +352,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         if (status == -1)
                         {
                             free(line);
+                            freeArray(&connectedNodes);
+
                             return -1;
                         }
                         curCheckpoint = '-';
@@ -370,6 +378,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             if (*startingNodeIndex == -1)
                             {
                                 free(line);
+                                freeArray(&connectedNodes);
+
                                 return -1;
                             }
                             int newNumberOfNodes = nodes->used;
@@ -377,6 +387,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             if (newNumberOfNodes > oldNumberOfNodes)
                             {
                                 free(line);
+                                freeArray(&connectedNodes);
+
                                 return -1;
                             }
                             curCheckpoint = '.';
@@ -398,6 +410,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         {
                             free(substr);
                             free(line);
+                            freeArray(&connectedNodes);
+
                             return -1;
                         }
                         free(substr);
@@ -410,6 +424,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         if (status == -1)
                         {
                             free(line);
+                            freeArray(&connectedNodes);
+
                             return -1;
                         }
                         curCheckpoint = '.';
@@ -423,6 +439,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         {
                             free(substr);
                             free(line);
+                            freeArray(&connectedNodes);
+
                             return -1;
                         }
                         curCheckpoint = '.';
@@ -432,6 +450,8 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     else
                     {
                         free(line);
+                        freeArray(&connectedNodes);
+
                         return -1;
                     }
                     break;
