@@ -35,7 +35,7 @@ void initArray(Array *a)
     a->size = 5;
 }
 
-void insertArray(nodeArray *nodes, Array *a, int index)
+void insertNeighbourArray(nodeArray *nodes, Array *a, int index)
 {
     if (a->used == a->size)
     {
@@ -62,6 +62,26 @@ void insertArray(nodeArray *nodes, Array *a, int index)
     }
 
     a->array[a->used++] = index;
+}
+
+int insertArray(Array *a, int index)
+{
+    if (a->used == a->size)
+    {
+        a->size *= 2;
+        a->array = realloc(a->array, a->size * sizeof(int));
+    }
+
+    for (int i = 0; i < a->used; i++)
+    {
+        if (a->array[i] == index)
+        {
+            return -1;
+        }
+    }
+
+    a->array[a->used++] = index;
+    return 0;
 }
 
 void freeArray(Array *a)
@@ -97,7 +117,7 @@ int addNeighbour(nodeArray *nodes, node *a, int neighbourIndex)
         }
     }
 
-    insertArray(nodes, a->neighbourNodes, neighbourIndex);
+    insertNeighbourArray(nodes, a->neighbourNodes, neighbourIndex);
     return 0;
 }
 
@@ -212,13 +232,17 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
         int beginNodeLine = 0;
         int stepNumLine = 0;
         size_t currentNodeIndex = 0;
+        //Array connectedNodes;
+
+        //initArray(&connectedNodes);
 
         for (int i = 0; i < strlen(line); i++)
         {
             if ((96 < line[i] && line[i] < 123) || (47 < line[i] && line[i] < 58) || line[i] == 65 || line[i] == 73 || line[i] == 58 || line[i] == 44 || line[i] == 45 || line[i] == 10)
             {
-                if (line[i] == ':')
+                switch (line[i])
                 {
+                case ':':
                     if (curCheckpoint == '.')
                     {
                         char *substr = extractString(line, startIndex, i);
@@ -264,10 +288,9 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         free(line);
                         return -1;
                     }
-                }
+                    break;
 
-                if (line[i] == ',')
-                {
+                case ',':
                     if (curCheckpoint == ':' || curCheckpoint == ',')
                     {
                         int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
@@ -285,10 +308,9 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         free(line);
                         return -1;
                     }
-                }
+                    break;
 
-                if (line[i] == '-')
-                {
+                case '-':
                     if (curCheckpoint == ':')
                     {
                         if (startIndex == i)
@@ -324,10 +346,9 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         free(line);
                         return -1;
                     }
-                }
+                    break;
 
-                if (line[i] == '\n')
-                {
+                case '\n':
                     if (curCheckpoint == ':')
                     {
                         if (beginNodeLine == 1)
@@ -348,7 +369,6 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                                 free(line);
                                 return -1;
                             }
-
                             curCheckpoint = '.';
                             startIndex = 0;
                             continue;
@@ -363,11 +383,14 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             continue;
                         }
                         int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
-                        if (status == -1 || *extractString(line, startIndex, i) == '\0')
+                        char *substr = extractString(line, startIndex, i);
+                        if (status == -1 || *substr == '\0')
                         {
+                            free(substr);
                             free(line);
                             return -1;
                         }
+                        free(substr);
                         curCheckpoint = '.';
                         startIndex = 0;
                     }
@@ -401,14 +424,14 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         free(line);
                         return -1;
                     }
+                    break;
+                default:
+                    break;
                 }
             }
-            else
-            {
-                free(line);
-                return -1;
-            }
         }
+
+        ///process neighbor array
     }
     free(line);
     return 0;
