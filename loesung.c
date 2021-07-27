@@ -1,4 +1,4 @@
-#define  _POSIX_C_SOURCE 200809L
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +16,7 @@ typedef struct
     char *ID;
     Array *neighbourNodes;
     size_t timesVisited;
+    size_t listed;
 } node;
 
 typedef struct
@@ -76,30 +77,39 @@ void initNode(node *a, char *ID)
 {
     a->ID = ID;
     a->timesVisited = 0;
+    a->listed = 0;
     a->neighbourNodes = malloc(sizeof(Array));
 
     initArray(a->neighbourNodes);
 }
 
-void addNeighbour(nodeArray *nodes, node *a, int neighbourIndex)
+int addNeighbour(nodeArray *nodes, node *a, int neighbourIndex)
 {
+    if (nodes->array[neighbourIndex].ID == a->ID)
+    {
+        return -1;
+    }
     for (int i = 0; i < a->neighbourNodes->used; i++)
     {
         if (a->neighbourNodes->array[i] == neighbourIndex)
         {
-            return;
+            return 0;
         }
     }
 
     insertArray(nodes, a->neighbourNodes, neighbourIndex);
+    return 0;
 }
 
-void updateTimeVisited(node *a, int timeVisited)
+int updateTimeVisited(node *a, long timeVisited)
 {
     if (timeVisited > 4294967295)
-        exit(EXIT_FAILURE);
+    {
+        return -1;
+    }
 
     a->timesVisited = (a->timesVisited + timeVisited) % 4294967295;
+    return 0;
 }
 
 void freeNode(node *a)
@@ -121,6 +131,12 @@ void initNodeArray(nodeArray *a, size_t initialSize)
 
 int insertNodeArray(nodeArray *a, char *ID)
 {
+    if (*ID == '\0')
+    {
+        free(ID);
+        return -1;
+    }
+
     for (int i = 0; i < a->used; i++)
     {
         if (strcmp(ID, a->array[i].ID) == 0)
@@ -166,7 +182,24 @@ char *extractString(char *line, int startIndex, int endIndex)
     return substr;
 }
 
-void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSteps)
+int processNeighbours(nodeArray *nodes, char *neighbour, int mainNodeIndex)
+{
+    int index = insertNodeArray(nodes, neighbour);
+    if (index == -1)
+    {
+        return -1;
+    }
+    int status1 = addNeighbour(nodes, &(nodes->array[mainNodeIndex]), index);
+    int status2 = addNeighbour(nodes, &(nodes->array[index]), mainNodeIndex);
+
+    if (status1 == -1 || status2 == -1)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSteps)
 {
 
     char *line = NULL;
@@ -208,12 +241,28 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                             continue;
                         }
                         currentNodeIndex = insertNodeArray(nodes, substr);
+
+                        if (currentNodeIndex == -1)
+                        {
+                            free(line);
+                            return -1;
+                        }
+                        if (nodes->array[currentNodeIndex].listed == 0)
+                        {
+                            nodes->array[currentNodeIndex].listed = 1;
+                        }
+                        else
+                        {
+                            free(line);
+                            return -1;
+                        }
                         curCheckpoint = ':';
                         startIndex = i + 1;
                     }
                     else
                     {
-                        exit(EXIT_FAILURE);
+                        free(line);
+                        return -1;
                     }
                 }
 
@@ -221,16 +270,20 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                 {
                     if (curCheckpoint == ':' || curCheckpoint == ',')
                     {
-                        char *substr = extractString(line, startIndex, i);
-                        int index = insertNodeArray(nodes, substr);
-                        addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
-                        addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        if (status == -1)
+                        {
+                            free(line);
+                            return -1;
+                        }
+
                         curCheckpoint = ',';
                         startIndex = i + 1;
                     }
                     else
                     {
-                        exit(EXIT_FAILURE);
+                        free(line);
+                        return -1;
                     }
                 }
 
@@ -245,26 +298,31 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                         }
                         else
                         {
-                            char *substr = extractString(line, startIndex, i);
-                            int index = insertNodeArray(nodes, substr);
-                            addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
-                            addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
+                            int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                            if (status == -1)
+                            {
+                                free(line);
+                                return -1;
+                            }
                             curCheckpoint = '-';
                             startIndex = i + 1;
                         }
                     }
                     else if (curCheckpoint == ',')
                     {
-                        char *substr = extractString(line, startIndex, i);
-                        int index = insertNodeArray(nodes, substr);
-                        addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
-                        addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        if (status == -1)
+                        {
+                            free(line);
+                            return -1;
+                        }
                         curCheckpoint = '-';
                         startIndex = i + 1;
                     }
                     else
                     {
-                        exit(EXIT_FAILURE);
+                        free(line);
+                        return -1;
                     }
                 }
 
@@ -278,10 +336,18 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
 
                             int oldNumberOfNodes = nodes->used;
                             *startingNodeIndex = insertNodeArray(nodes, substr);
+                            if (*startingNodeIndex == -1)
+                            {
+                                free(line);
+                                return -1;
+                            }
                             int newNumberOfNodes = nodes->used;
 
                             if (newNumberOfNodes > oldNumberOfNodes)
-                                exit(EXIT_FAILURE);
+                            {
+                                free(line);
+                                return -1;
+                            }
 
                             curCheckpoint = '.';
                             startIndex = 0;
@@ -296,44 +362,56 @@ void processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfS
                             free(substr);
                             continue;
                         }
-                        char *substr = extractString(line, startIndex, i);
-                        int index = insertNodeArray(nodes, substr);
-                        addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
-                        addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        if (status == -1 || *extractString(line, startIndex, i) == '\0')
+                        {
+                            free(line);
+                            return -1;
+                        }
                         curCheckpoint = '.';
                         startIndex = 0;
                     }
                     else if (curCheckpoint == ',')
                     {
-                        char *substr = extractString(line, startIndex, i);
-                        int index = insertNodeArray(nodes, substr);
-                        addNeighbour(nodes, &(nodes->array[currentNodeIndex]), index);
-                        addNeighbour(nodes, &(nodes->array[index]), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        if (status == -1)
+                        {
+                            free(line);
+                            return -1;
+                        }
                         curCheckpoint = '.';
                         startIndex = 0;
                     }
                     else if (curCheckpoint == '-')
                     {
                         char *substr = extractString(line, startIndex, i);
-                        updateTimeVisited(&(nodes->array[currentNodeIndex]), atoi(substr));
+                        int status = updateTimeVisited(&(nodes->array[currentNodeIndex]), atol(substr));
+                        if (status == -1)
+                        {
+                            free(substr);
+                            free(line);
+                            return -1;
+                        }
                         curCheckpoint = '.';
                         startIndex = 0;
                         free(substr);
                     }
                     else
                     {
-                        exit(EXIT_FAILURE);
+                        free(line);
+                        return -1;
                     }
                 }
             }
             else
             {
-
-                exit(EXIT_FAILURE);
+                free(line);
+                return -1;
             }
         }
     }
     free(line);
+    return 0;
 }
 
 int main()
@@ -343,26 +421,37 @@ int main()
     size_t startingNodeIndex = 0;
     size_t numberOfSteps = 0;
 
-    processInput(&nodes, &startingNodeIndex, &numberOfSteps);
+    int status = processInput(&nodes, &startingNodeIndex, &numberOfSteps);
 
-    for (int i = 1; i <= numberOfSteps; i++)
+    if (status == 0 && nodes.used != 0)
     {
+        for (int i = 1; i <= numberOfSteps; i++)
+        {
 
-        node *last = &(nodes.array[startingNodeIndex]);
-        int timesVisited = last->timesVisited;
-        int numOfNeighbour = last->neighbourNodes->used;
-        startingNodeIndex = last->neighbourNodes->array[timesVisited % numOfNeighbour];
-        updateTimeVisited(last, 1);
+            node *last = &(nodes.array[startingNodeIndex]);
+            int timesVisited = last->timesVisited;
+            int numOfNeighbour = last->neighbourNodes->used;
+            if (numOfNeighbour != 0)
+            {
+                startingNodeIndex = last->neighbourNodes->array[timesVisited % numOfNeighbour];
+                updateTimeVisited(last, 1);
+            }
+        }
+
+        for (int i = 0; i < nodes.used; i++)
+        {
+            printf("%s:%ld\n", nodes.array[i].ID, nodes.array[i].timesVisited);
+        }
+
+        printf("E:%s\n", nodes.array[startingNodeIndex].ID);
+        freeNodeArray(&nodes);
     }
-
-    for (int i = 0; i < nodes.used; i++)
+    else
     {
-        printf("%s:%ld\n", nodes.array[i].ID, nodes.array[i].timesVisited);
+        printf("Error in input\n");
+        freeNodeArray(&nodes);
+        exit(EXIT_FAILURE);
     }
-
-    printf("E:%s\n", nodes.array[startingNodeIndex].ID);
-
-    freeNodeArray(&nodes);
 
     return 0;
 }
