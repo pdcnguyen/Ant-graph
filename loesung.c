@@ -202,13 +202,23 @@ char *extractString(char *line, int startIndex, int endIndex)
     return substr;
 }
 
-int processNeighbours(nodeArray *nodes, char *neighbour, int mainNodeIndex)
+int processNeighbours(nodeArray *nodes, char *neighbour, int mainNodeIndex, Array *connectedNodes)
 {
     int index = insertNodeArray(nodes, neighbour);
     if (index == -1)
     {
         return -1;
     }
+
+    for(int i =0; i<connectedNodes->used; i++){
+        if(connectedNodes->array[i]==index){
+            freeArray(connectedNodes);
+            return -1;
+        }
+    }
+
+    insertArray(connectedNodes, index);
+
     int status1 = addNeighbour(nodes, &(nodes->array[mainNodeIndex]), index);
     int status2 = addNeighbour(nodes, &(nodes->array[index]), mainNodeIndex);
 
@@ -232,9 +242,9 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
         int beginNodeLine = 0;
         int stepNumLine = 0;
         size_t currentNodeIndex = 0;
-        //Array connectedNodes;
+        Array connectedNodes;
 
-        //initArray(&connectedNodes);
+        initArray(&connectedNodes);
 
         for (int i = 0; i < strlen(line); i++)
         {
@@ -293,7 +303,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                 case ',':
                     if (curCheckpoint == ':' || curCheckpoint == ',')
                     {
-                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         if (status == -1)
                         {
                             free(line);
@@ -320,7 +330,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         }
                         else
                         {
-                            int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                            int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                             if (status == -1)
                             {
                                 free(line);
@@ -332,7 +342,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     }
                     else if (curCheckpoint == ',')
                     {
-                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         if (status == -1)
                         {
                             free(line);
@@ -382,7 +392,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             free(substr);
                             continue;
                         }
-                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         char *substr = extractString(line, startIndex, i);
                         if (status == -1 || *substr == '\0')
                         {
@@ -396,7 +406,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     }
                     else if (curCheckpoint == ',')
                     {
-                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex);
+                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         if (status == -1)
                         {
                             free(line);
@@ -431,7 +441,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
             }
         }
 
-        ///process neighbor array
+        freeArray(&connectedNodes);
     }
     free(line);
     return 0;
