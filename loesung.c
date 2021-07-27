@@ -259,40 +259,36 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     {
                         char *substr = extractString(line, startIndex, i);
 
-                        if (*substr == 'A')
+                        if (*substr == 'A' || *substr == 'I')
                         {
-                            beginNodeLine = 1;
-                            curCheckpoint = ':';
-                            startIndex = i + 1;
-                            free(substr);
-                            continue;
-                        }
+                            if (*substr == 'A')
+                                beginNodeLine = 1;
 
-                        if (*substr == 'I')
-                        {
-                            stepNumLine = 1;
-                            curCheckpoint = ':';
-                            startIndex = i + 1;
-                            free(substr);
-                            continue;
-                        }
-                        currentNodeIndex = insertNodeArray(nodes, substr);
+                            if (*substr == 'I')
+                                stepNumLine = 1;
 
-                        if (currentNodeIndex == -1)
-                        {
-                            free(line);
-                            freeArray(&connectedNodes);
-                            return -1;
-                        }
-                        if (nodes->array[currentNodeIndex].listed == 0)
-                        {
-                            nodes->array[currentNodeIndex].listed = 1;
+                            free(substr);
                         }
                         else
                         {
-                            free(line);
-                            freeArray(&connectedNodes);
-                            return -1;
+                            currentNodeIndex = insertNodeArray(nodes, substr);
+
+                            if (currentNodeIndex == -1)
+                            {
+                                free(line);
+                                freeArray(&connectedNodes);
+                                return -1;
+                            }
+                            if (nodes->array[currentNodeIndex].listed == 0)
+                            {
+                                nodes->array[currentNodeIndex].listed = 1;
+                            }
+                            else
+                            {
+                                free(line);
+                                freeArray(&connectedNodes);
+                                return -1;
+                            }
                         }
                         curCheckpoint = ':';
                         startIndex = i + 1;
@@ -326,7 +322,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     break;
 
                 case '-':
-                    if (curCheckpoint == ':')
+                    if (curCheckpoint == ':' || curCheckpoint == ',')
                     {
                         if (startIndex == i)
                         {
@@ -346,19 +342,6 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             startIndex = i + 1;
                         }
                     }
-                    else if (curCheckpoint == ',')
-                    {
-                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
-                        if (status == -1)
-                        {
-                            free(line);
-                            freeArray(&connectedNodes);
-
-                            return -1;
-                        }
-                        curCheckpoint = '-';
-                        startIndex = i + 1;
-                    }
                     else
                     {
                         free(line);
@@ -372,49 +355,37 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         if (beginNodeLine == 1)
                         {
                             char *substr = extractString(line, startIndex, i);
-
                             int oldNumberOfNodes = nodes->used;
                             *startingNodeIndex = insertNodeArray(nodes, substr);
-                            if (*startingNodeIndex == -1)
-                            {
-                                free(line);
-                                freeArray(&connectedNodes);
-
-                                return -1;
-                            }
                             int newNumberOfNodes = nodes->used;
 
-                            if (newNumberOfNodes > oldNumberOfNodes)
+                            if (*startingNodeIndex == -1 || newNumberOfNodes > oldNumberOfNodes)
                             {
                                 free(line);
                                 freeArray(&connectedNodes);
-
                                 return -1;
                             }
-                            curCheckpoint = '.';
-                            startIndex = 0;
-                            continue;
+
+                            beginNodeLine = 0;
                         }
-                        if (stepNumLine == 1)
+                        else if (stepNumLine == 1)
                         {
                             char *substr = extractString(line, startIndex, i);
-                            *numberOfSteps = atoi(substr);
-                            curCheckpoint = '.';
-                            startIndex = 0;
+                            *numberOfSteps = atol(substr);
                             free(substr);
-                            continue;
+                            stepNumLine = 0;
                         }
-                        int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
-                        char *substr = extractString(line, startIndex, i);
-                        if (status == -1 || *substr == '\0')
+                        else
                         {
-                            free(substr);
-                            free(line);
-                            freeArray(&connectedNodes);
-
-                            return -1;
+                            int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
+                            if (status == -1)
+                            {
+                                free(line);
+                                freeArray(&connectedNodes);
+                                return -1;
+                            }
                         }
-                        free(substr);
+
                         curCheckpoint = '.';
                         startIndex = 0;
                     }
@@ -425,7 +396,6 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         {
                             free(line);
                             freeArray(&connectedNodes);
-
                             return -1;
                         }
                         curCheckpoint = '.';
@@ -440,7 +410,6 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             free(substr);
                             free(line);
                             freeArray(&connectedNodes);
-
                             return -1;
                         }
                         curCheckpoint = '.';
@@ -480,14 +449,13 @@ int main()
     {
         for (int i = 1; i <= numberOfSteps; i++)
         {
-
             node *last = &(nodes.array[startingNodeIndex]);
             int timesVisited = last->timesVisited;
             int numOfNeighbour = last->neighbourNodes->used;
+            updateTimeVisited(last, 1);
             if (numOfNeighbour != 0)
             {
                 startingNodeIndex = last->neighbourNodes->array[timesVisited % numOfNeighbour];
-                updateTimeVisited(last, 1);
             }
         }
 
