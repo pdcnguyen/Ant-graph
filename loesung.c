@@ -231,6 +231,13 @@ int processNeighbours(nodeArray *nodes, char *neighbour, int mainNodeIndex, Arra
     return 0;
 }
 
+int exitFail(char *line, Array *connectedNodes)
+{
+    free(line);
+    freeArray(connectedNodes);
+    return -1;
+}
+
 int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSteps)
 {
 
@@ -274,20 +281,15 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             currentNodeIndex = insertNodeArray(nodes, substr);
 
                             if (currentNodeIndex == -1)
-                            {
-                                free(line);
-                                freeArray(&connectedNodes);
-                                return -1;
-                            }
+                                return exitFail(line, &connectedNodes);
+
                             if (nodes->array[currentNodeIndex].listed == 0)
                             {
                                 nodes->array[currentNodeIndex].listed = 1;
                             }
                             else
                             {
-                                free(line);
-                                freeArray(&connectedNodes);
-                                return -1;
+                                return exitFail(line, &connectedNodes);
                             }
                         }
                         curCheckpoint = ':';
@@ -295,8 +297,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     }
                     else
                     {
-                        free(line);
-                        return -1;
+                        return exitFail(line, &connectedNodes);
                     }
                     break;
 
@@ -305,19 +306,15 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     {
                         int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         if (status == -1)
-                        {
-                            free(line);
-                            freeArray(&connectedNodes);
-                            return -1;
-                        }
+
+                            return exitFail(line, &connectedNodes);
 
                         curCheckpoint = ',';
                         startIndex = i + 1;
                     }
                     else
                     {
-                        free(line);
-                        return -1;
+                        return exitFail(line, &connectedNodes);
                     }
                     break;
 
@@ -333,19 +330,14 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         {
                             int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                             if (status == -1)
-                            {
-                                free(line);
-                                freeArray(&connectedNodes);
-                                return -1;
-                            }
+                                return exitFail(line, &connectedNodes);
                             curCheckpoint = '-';
                             startIndex = i + 1;
                         }
                     }
                     else
                     {
-                        free(line);
-                        return -1;
+                        return exitFail(line, &connectedNodes);
                     }
                     break;
 
@@ -360,11 +352,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                             int newNumberOfNodes = nodes->used;
 
                             if (*startingNodeIndex == -1 || newNumberOfNodes > oldNumberOfNodes)
-                            {
-                                free(line);
-                                freeArray(&connectedNodes);
-                                return -1;
-                            }
+                                return exitFail(line, &connectedNodes);
 
                             beginNodeLine = 0;
                         }
@@ -379,11 +367,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         {
                             int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                             if (status == -1)
-                            {
-                                free(line);
-                                freeArray(&connectedNodes);
-                                return -1;
-                            }
+                                return exitFail(line, &connectedNodes);
                         }
 
                         curCheckpoint = '.';
@@ -393,11 +377,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     {
                         int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         if (status == -1)
-                        {
-                            free(line);
-                            freeArray(&connectedNodes);
-                            return -1;
-                        }
+                            return exitFail(line, &connectedNodes);
                         curCheckpoint = '.';
                         startIndex = 0;
                     }
@@ -406,27 +386,23 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                         char *substr = extractString(line, startIndex, i);
                         int status = updateTimeVisited(&(nodes->array[currentNodeIndex]), atol(substr));
                         if (status == -1)
-                        {
-                            free(substr);
-                            free(line);
-                            freeArray(&connectedNodes);
-                            return -1;
-                        }
+                            return exitFail(line, &connectedNodes);
                         curCheckpoint = '.';
                         startIndex = 0;
                         free(substr);
                     }
                     else
                     {
-                        free(line);
-                        freeArray(&connectedNodes);
-
-                        return -1;
+                        return exitFail(line, &connectedNodes);
                     }
                     break;
                 default:
                     break;
                 }
+            }
+            else
+            {
+                return exitFail(line, &connectedNodes);
             }
         }
 
