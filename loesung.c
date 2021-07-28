@@ -306,9 +306,7 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     {
                         int status = processNeighbours(nodes, extractString(line, startIndex, i), currentNodeIndex, &connectedNodes);
                         if (status == -1)
-
                             return exitFail(line, &connectedNodes);
-
                         curCheckpoint = ',';
                         startIndex = i + 1;
                     }
@@ -385,11 +383,11 @@ int processInput(nodeArray *nodes, size_t *startingNodeIndex, size_t *numberOfSt
                     {
                         char *substr = extractString(line, startIndex, i);
                         int status = updateTimeVisited(&(nodes->array[currentNodeIndex]), atol(substr));
+                        free(substr);
                         if (status == -1)
                             return exitFail(line, &connectedNodes);
                         curCheckpoint = '.';
                         startIndex = 0;
-                        free(substr);
                     }
                     else
                     {
